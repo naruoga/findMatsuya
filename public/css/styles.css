@@ -1,0 +1,9 @@
+#canvas .olControlAttribution {
+    font-size:13px;
+    bottom:3px;
+}
+
+#tbl-bdr table,#tbl-bdr td,#tbl-bdr th {
+    border-collapse: collapse;
+    border:1px solid #333;
+}

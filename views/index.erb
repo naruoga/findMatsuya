@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="stylesheet" type="text/css" href="css/styles.css">
+<script type="text/javascript" src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<script type="text/javascript">
+    function init() {
+        var map = new OpenLayers.Map("canvas");
+        var mapnik = new OpenLayers.Layer.OSM();
+        map.addLayer(mapnik);
+         
+        var lonLat = new OpenLayers.LonLat(<%= @lon %>, <%= @lat %>)
+            .transform(
+                new OpenLayers.Projection("EPSG:4326"), 
+                new OpenLayers.Projection("EPSG:900913")
+            );
+        map.setCenter(lonLat, 15);
+
+        var markers = new OpenLayers.Layer.Markers("Markers");
+        map.addLayer(markers);
+        var marker = new OpenLayers.Marker(
+            new OpenLayers.LonLat(<%= @lon %>, <%= @lat %>)
+                .transform(
+                   new OpenLayers.Projection("EPSG:4326"), 
+                   new OpenLayers.Projection("EPSG:900913")
+                )
+        );
+        markers.addMarker(marker);
+
+        var stores = new Array();
+        <%
+	   @stores.each do | store |
+	   coords = store['loc']['coordinates']
+	   gravity = store['type'] == 'node' ? coords
+	   	                             : Matsuya.gravitypoint(coords[0])
+	   %>
+	   stores.push([<%= gravity[0] %>, <%= gravity[1] %>]);
+	<% end %>
+
+        var size = new OpenLayers.Size(20, 20);
+        var offset = new OpenLayers.Pixel(-(size.w/2), -size.h);
+        var icon = new OpenLayers.Icon('images/icon.png', size, offset);
+	stores.forEach(function (store) {
+	    var newIcon = icon.clone();
+            var marker = new OpenLayers.Marker(
+            new OpenLayers.LonLat(store[0], store[1])
+                .transform(
+                     new OpenLayers.Projection("EPSG:4326"),
+                     new OpenLayers.Projection("EPSG:900913")
+                ),
+                newIcon
+            );
+            markers.addMarker(marker);
+	});
+    }
+</script>
+<title>松屋探し <%= @place %></title> 
+</head>
+<body onload="init();">
+    <h1>MongoDB Presents <img src="images/logo.gif" alt="Matsuya"> を探そう！</h1>
+    <form method="post" action="/">
+      <p>探したい場所を入力してね：
+      <input type="text" name="placename" value="<%= @place %>" required><input type="submit" value="実行！">
+    </form>
+    <div id="canvas" style="width:500px; height:400px"></div>
+    <% if @query_string == '' %>
+    <%= '<div hidden>' %>
+    <% else %>
+    <%= '<div>' %>
+    <% end %>
+    <p>問い合わせ文字列: <input type='text' readonly value="<%= h @query_string %>" size=200 style="width:1000px;"></p>
+    <p>The data included in this document is from www.openstreetmap.org. The data is made a vailable under ODbL.</p>
+    <div id="tbl-bdr">
+    <table>
+      <tr><th>店名</th><th style="white-space: nowrap;">電話番号</th><th>位置</th></tr>
+      <% @stores.each do |store| %>
+      <% tags = store['tags'] %>
+      <% coords = store['loc']['coordinates'] %>
+      <%=   "<tr><td>#{tags['name']}#{tags['branch']}</td><td>#{tags['phone']}</td><td>#{coords.to_s}</td>" %>
+      <% end %>
+    </table>
+    </div>
+    </div>
+    
+<p>Thanks for Takayoshi OKANO (@okano_t) and his awesome work called &quot;OpenStreet Matsuya.&quot;<p>
+
+</body>
+</html>
